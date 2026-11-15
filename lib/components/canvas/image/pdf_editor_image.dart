@@ -210,7 +210,7 @@ class PdfEditorImage extends EditorImage {
     dstRect: dstRect,
     naturalSize: naturalSize,
     isThumbnail: isThumbnail,
-  );
+  )..copyLayerStateFrom(this);
 
   @override
   void dispose() {

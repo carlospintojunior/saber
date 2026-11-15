@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show max, min;
 import 'dart:typed_data';
 
 import 'package:collapsible/collapsible.dart';
@@ -854,6 +855,26 @@ class EditorState extends State<Editor> {
     );
     // setState to update undo button
     setState(() {});
+    autosaveAfterDelay();
+  }
+
+  /// Moves [image] in front of or behind the other images on its page.
+  /// Images are painted in list order, so this also changes the saved order.
+  void reorderImage(EditorImage image, ImageOrder order) {
+    final images = coreInfo.pages[image.pageIndex].images;
+    final index = images.indexOf(image);
+    if (index == -1) return;
+    final newIndex = switch (order) {
+      .toFront => images.length - 1,
+      .forward => min(index + 1, images.length - 1),
+      .backward => max(index - 1, 0),
+      .toBack => 0,
+    };
+    if (newIndex == index) return;
+    setState(() {
+      images.removeAt(index);
+      images.insert(newIndex, image);
+    });
     autosaveAfterDelay();
   }
 
@@ -1938,6 +1959,7 @@ class EditorState extends State<Editor> {
         autosaveAfterDelay();
         setState(() {});
       },
+      reorderImage: reorderImage,
       currentTool: currentTool,
       currentScale: _transformationController.value.approxScale,
     );

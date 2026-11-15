@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoIcons;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:saber/components/canvas/canvas_image_crop_dialog.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/adaptive_switch.dart';
@@ -20,6 +21,7 @@ class CanvasImageDialog extends StatefulWidget {
     required this.redrawImage,
     required this.isBackground,
     required this.toggleAsBackground,
+    this.reorderImage,
     this.singleRow = false,
   });
 
@@ -29,6 +31,11 @@ class CanvasImageDialog extends StatefulWidget {
 
   final bool isBackground;
   final VoidCallback? toggleAsBackground;
+
+  /// Moves the image in front of or behind the other images.
+  /// Layer and transform options are hidden for background images
+  /// and when this is null.
+  final void Function(ImageOrder order)? reorderImage;
 
   final bool singleRow;
 
@@ -46,7 +53,85 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
   @override
   Widget build(BuildContext context) {
     final platform = Theme.of(context).platform;
+    final image = widget.image;
+    final showLayerOptions = !widget.isBackground;
     final children = <Widget>[
+      if (showLayerOptions) ...[
+        _CanvasImageDialogItem(
+          onTap: () => setState(() {
+            image.locked = !image.locked;
+            image.onMiscChange?.call();
+            widget.redrawImage();
+          }),
+          title: image.locked
+              ? t.editor.imageOptions.unlock
+              : t.editor.imageOptions.lock,
+          child: Icon(image.locked ? Icons.lock_open : Icons.lock),
+        ),
+        if (!image.locked) ...[
+          _CanvasImageDialogItem(
+            onTap: () => setState(() {
+              image.rotate(clockwise: false);
+              widget.redrawImage();
+            }),
+            title: t.editor.imageOptions.rotateLeft,
+            child: const Icon(Icons.rotate_left),
+          ),
+          _CanvasImageDialogItem(
+            onTap: () => setState(() {
+              image.rotate();
+              widget.redrawImage();
+            }),
+            title: t.editor.imageOptions.rotateRight,
+            child: const Icon(Icons.rotate_right),
+          ),
+          _CanvasImageDialogItem(
+            onTap: () => setState(() {
+              image.flip();
+              widget.redrawImage();
+            }),
+            title: t.editor.imageOptions.flip,
+            child: const Icon(Icons.flip),
+          ),
+          if (image is PngEditorImage)
+            _CanvasImageDialogItem(
+              onTap: () async {
+                Navigator.of(context).pop();
+                final newCrop = await showCanvasImageCropDialog(
+                  context,
+                  image: image,
+                );
+                if (newCrop == null) return;
+                image.setCrop(newCrop);
+                widget.redrawImage();
+              },
+              title: t.editor.imageOptions.crop,
+              child: const Icon(Icons.crop),
+            ),
+        ],
+        if (widget.reorderImage != null) ...[
+          _CanvasImageDialogItem(
+            onTap: () => widget.reorderImage!(.toFront),
+            title: t.editor.imageOptions.bringToFront,
+            child: const Icon(Icons.flip_to_front),
+          ),
+          _CanvasImageDialogItem(
+            onTap: () => widget.reorderImage!(.forward),
+            title: t.editor.imageOptions.bringForward,
+            child: const Icon(Icons.arrow_upward),
+          ),
+          _CanvasImageDialogItem(
+            onTap: () => widget.reorderImage!(.backward),
+            title: t.editor.imageOptions.sendBackward,
+            child: const Icon(Icons.arrow_downward),
+          ),
+          _CanvasImageDialogItem(
+            onTap: () => widget.reorderImage!(.toBack),
+            title: t.editor.imageOptions.sendToBack,
+            child: const Icon(Icons.flip_to_back),
+          ),
+        ],
+      ],
       MergeSemantics(
         child: _CanvasImageDialogItem(
           onTap: stows.editorAutoInvert.value ? setInvertible : null,
@@ -149,6 +234,27 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
       ),
     ];
 
+    final opacitySlider = showLayerOptions
+        ? Row(
+            children: [
+              const Icon(Icons.opacity),
+              Expanded(
+                child: Slider(
+                  value: image.opacity,
+                  min: 0.1,
+                  semanticFormatterCallback: (value) =>
+                      '${t.editor.imageOptions.opacity} ${(value * 100).round()}%',
+                  onChanged: (value) => setState(() {
+                    image.opacity = value;
+                    widget.redrawImage();
+                  }),
+                  onChangeEnd: (_) => image.onMiscChange?.call(),
+                ),
+              ),
+            ],
+          )
+        : null;
+
     final gridView = GridView.count(
       crossAxisCount: widget.singleRow ? children.length : 2,
       crossAxisSpacing: 8,
@@ -156,6 +262,26 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
       shrinkWrap: true,
       children: children,
     );
+    if (showLayerOptions) {
+      // many options: let the grid scroll on small screens
+      return SizedBox(
+        width: 250,
+        child: Column(
+          mainAxisSize: .min,
+          children: [
+            Flexible(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+                ),
+                child: gridView,
+              ),
+            ),
+            ?opacitySlider,
+          ],
+        ),
+      );
+    }
     // issues with intrinsic sizes with each type of dialog
     if (platform.isCupertino) {
       return AspectRatio(

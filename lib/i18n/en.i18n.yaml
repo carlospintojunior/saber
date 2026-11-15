@@ -323,6 +323,18 @@ editor:
     setAsBackground: Set as background
     removeAsBackground: Remove as background
     delete: Delete
+    rotateLeft: Rotate left
+    rotateRight: Rotate right
+    flip: Flip
+    crop: Crop
+    cropReset: Reset
+    lock: Lock
+    unlock: Unlock
+    opacity: Opacity
+    bringToFront: Bring to front
+    bringForward: Forward
+    sendBackward: Backward
+    sendToBack: Send to back
   selectionBar:
     delete: Delete
     duplicate: Duplicate

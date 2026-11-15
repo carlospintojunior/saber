@@ -1241,6 +1241,42 @@ class Translations$editor$imageOptions$en {
 
 	/// en: 'Delete'
 	String get delete => 'Delete';
+
+	/// en: 'Rotate left'
+	String get rotateLeft => 'Rotate left';
+
+	/// en: 'Rotate right'
+	String get rotateRight => 'Rotate right';
+
+	/// en: 'Flip'
+	String get flip => 'Flip';
+
+	/// en: 'Crop'
+	String get crop => 'Crop';
+
+	/// en: 'Reset'
+	String get cropReset => 'Reset';
+
+	/// en: 'Lock'
+	String get lock => 'Lock';
+
+	/// en: 'Unlock'
+	String get unlock => 'Unlock';
+
+	/// en: 'Opacity'
+	String get opacity => 'Opacity';
+
+	/// en: 'Bring to front'
+	String get bringToFront => 'Bring to front';
+
+	/// en: 'Forward'
+	String get bringForward => 'Forward';
+
+	/// en: 'Backward'
+	String get sendBackward => 'Backward';
+
+	/// en: 'Send to back'
+	String get sendToBack => 'Send to back';
 }
 
 // Path: editor.selectionBar

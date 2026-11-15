@@ -22,6 +22,9 @@ part 'pdf_editor_image.dart';
 part 'png_editor_image.dart';
 part 'svg_editor_image.dart';
 
+/// Where to move an image relative to the other images on its page.
+enum ImageOrder { toFront, forward, backward, toBack }
+
 /// The data for an image in the editor.
 /// This is listenable for changes to the image's position ([dstRect]).
 sealed class EditorImage extends ChangeNotifier {
@@ -90,6 +93,98 @@ sealed class EditorImage extends ChangeNotifier {
   /// The BoxFit used if this is a page's background image
   BoxFit backgroundFit;
 
+  /// How many clockwise quarter turns the image is rotated by (0 to 3).
+  ///
+  /// [dstRect] is the size of the image *after* rotation.
+  var quarterTurns = 0;
+
+  /// Whether the image is mirrored horizontally (applied before rotation).
+  var flipped = false;
+
+  /// The opacity of the image, from 0 (invisible) to 1 (opaque).
+  double opacity = 1;
+
+  /// Whether the image is protected from being moved or resized.
+  var locked = false;
+
+  /// The visible part of the image, as fractions (0 to 1) of [naturalSize].
+  /// [fullCrop] shows the whole image.
+  Rect crop = fullCrop;
+
+  /// The crop that shows the whole image.
+  static const fullCrop = Rect.fromLTRB(0, 0, 1, 1);
+
+  /// Whether [crop] hides part of the image.
+  bool get isCropped => crop != fullCrop;
+
+  /// Whether [quarterTurns] swaps the width and height of the image.
+  bool get isSideways => quarterTurns.isOdd;
+
+  /// The size of the visible part of the image, before rotation.
+  Size get croppedNaturalSize =>
+      Size(naturalSize.width * crop.width, naturalSize.height * crop.height);
+
+  /// Rotates the image 90 degrees clockwise ([clockwise]) or anticlockwise,
+  /// keeping its center in place.
+  void rotate({bool clockwise = true}) {
+    quarterTurns = (quarterTurns + (clockwise ? 1 : 3)) % 4;
+    final center = dstRect.center;
+    dstRect = Rect.fromCenter(
+      center: center,
+      width: dstRect.height,
+      height: dstRect.width,
+    );
+    onMiscChange?.call();
+  }
+
+  /// Mirrors the image horizontally as seen on screen.
+  void flip() {
+    flipped = !flipped;
+    notifyListeners();
+    onMiscChange?.call();
+  }
+
+  /// Shows only [newCrop] of the image, keeping the current pixel scale
+  /// and top-left corner of [dstRect].
+  void setCrop(Rect newCrop) {
+    final oldSize = croppedNaturalSize;
+    if (oldSize.isEmpty) return;
+    final unrotatedWidth = isSideways ? dstRect.height : dstRect.width;
+    final scale = unrotatedWidth / oldSize.width;
+
+    crop = newCrop;
+    final newSize = croppedNaturalSize * scale;
+    dstRect = dstRect.topLeft & (isSideways ? newSize.flipped : newSize);
+    onMiscChange?.call();
+  }
+
+  /// Copies [quarterTurns], [flipped], [opacity], [locked] and [crop]
+  /// from [other] onto this image.
+  @protected
+  void copyLayerStateFrom(EditorImage other) {
+    quarterTurns = other.quarterTurns;
+    flipped = other.flipped;
+    opacity = other.opacity;
+    locked = other.locked;
+    crop = other.crop;
+  }
+
+  /// Reads the keys written by [toJson] for [quarterTurns], [flipped],
+  /// [opacity], [locked] and [crop].
+  void _readLayerStateFromJson(Map<String, dynamic> json) {
+    quarterTurns = ((json['r'] as int?) ?? 0) % 4;
+    flipped = json['fl'] as bool? ?? false;
+    opacity = ((json['o'] as num?) ?? 1).toDouble().clamp(0.0, 1.0);
+    locked = json['lk'] as bool? ?? false;
+    crop = Rect.fromLTRB(
+      ((json['cl'] as num?) ?? 0).toDouble().clamp(0.0, 1.0),
+      ((json['ct'] as num?) ?? 0).toDouble().clamp(0.0, 1.0),
+      ((json['cr'] as num?) ?? 1).toDouble().clamp(0.0, 1.0),
+      ((json['cb'] as num?) ?? 1).toDouble().clamp(0.0, 1.0),
+    );
+    if (crop.width <= 0 || crop.height <= 0) crop = fullCrop;
+  }
+
   @protected
   new({
     required this.id,
@@ -118,8 +213,9 @@ sealed class EditorImage extends ChangeNotifier {
     required AssetCache assetCache,
   }) {
     final extension = json['e'] as String?;
+    final EditorImage image;
     if (extension == '.svg') {
-      return SvgEditorImage.fromJson(
+      image = SvgEditorImage.fromJson(
         json,
         inlineAssets: inlineAssets,
         isThumbnail: isThumbnail,
@@ -127,7 +223,7 @@ sealed class EditorImage extends ChangeNotifier {
         assetCache: assetCache,
       );
     } else if (extension == '.pdf') {
-      return PdfEditorImage.fromJson(
+      image = PdfEditorImage.fromJson(
         json,
         inlineAssets: inlineAssets,
         isThumbnail: isThumbnail,
@@ -135,7 +231,7 @@ sealed class EditorImage extends ChangeNotifier {
         assetCache: assetCache,
       );
     } else {
-      return PngEditorImage.fromJson(
+      image = PngEditorImage.fromJson(
         json,
         inlineAssets: inlineAssets,
         isThumbnail: isThumbnail,
@@ -143,6 +239,7 @@ sealed class EditorImage extends ChangeNotifier {
         assetCache: assetCache,
       );
     }
+    return image.._readLayerStateFromJson(json);
   }
 
   @mustBeOverridden
@@ -163,6 +260,16 @@ sealed class EditorImage extends ChangeNotifier {
     if (srcRect.height != 0) 'sh': srcRect.height,
     if (naturalSize.width != 0) 'nw': naturalSize.width,
     if (naturalSize.height != 0) 'nh': naturalSize.height,
+    if (quarterTurns != 0) 'r': quarterTurns,
+    if (flipped) 'fl': true,
+    if (opacity != 1) 'o': opacity,
+    if (locked) 'lk': true,
+    if (isCropped) ...{
+      'cl': crop.left,
+      'ct': crop.top,
+      'cr': crop.right,
+      'cb': crop.bottom,
+    },
   };
 
   /// Images are loaded out after 5 seconds of not being visible.

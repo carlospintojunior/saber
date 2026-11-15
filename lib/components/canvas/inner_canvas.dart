@@ -29,6 +29,7 @@ class InnerCanvas extends StatefulWidget {
     required this.currentStrokeDetectedShape,
     required this.currentSelection,
     this.setAsBackground,
+    this.reorderImage,
     this.onRenderObjectChange,
     required this.currentToolIsSelect,
     required this.currentScale,
@@ -45,6 +46,7 @@ class InnerCanvas extends StatefulWidget {
   final RecognizedUnistroke? currentStrokeDetectedShape;
   final SelectResult? currentSelection;
   final void Function(EditorImage image)? setAsBackground;
+  final void Function(EditorImage image, ImageOrder order)? reorderImage;
   final ValueChanged<RenderObject>? onRenderObjectChange;
 
   final bool currentToolIsSelect;
@@ -183,6 +185,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
                     image: page.images[i],
                     pageSize: Size(widget.width, widget.height),
                     setAsBackground: widget.setAsBackground,
+                    reorderImage: widget.reorderImage,
                     readOnly:
                         widget.coreInfo.readOnly || !widget.currentToolIsSelect,
                     selected:

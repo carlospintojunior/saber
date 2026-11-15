@@ -756,6 +756,18 @@ class _Translations$editor$imageOptions$pt_BR extends Translations$editor$imageO
 	@override String get setAsBackground => 'Definir como plano de fundo';
 	@override String get removeAsBackground => 'Remover como plano de fundo';
 	@override String get delete => 'Excluir';
+	@override String get rotateLeft => 'Girar à esquerda';
+	@override String get rotateRight => 'Girar à direita';
+	@override String get flip => 'Espelhar';
+	@override String get crop => 'Recortar';
+	@override String get cropReset => 'Redefinir';
+	@override String get lock => 'Bloquear';
+	@override String get unlock => 'Desbloquear';
+	@override String get opacity => 'Opacidade';
+	@override String get bringToFront => 'Trazer para frente';
+	@override String get bringForward => 'Avançar';
+	@override String get sendBackward => 'Recuar';
+	@override String get sendToBack => 'Enviar para trás';
 }
 
 // Path: editor.selectionBar

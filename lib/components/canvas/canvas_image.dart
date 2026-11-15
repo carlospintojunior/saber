@@ -17,6 +17,7 @@ class CanvasImage extends StatefulHookWidget {
     this.overrideBoxFit,
     required this.pageSize,
     required this.setAsBackground,
+    this.reorderImage,
     this.isBackground = false,
     this.readOnly = false,
     this.selected = false,
@@ -28,6 +29,9 @@ class CanvasImage extends StatefulHookWidget {
   final BoxFit? overrideBoxFit;
   final Size pageSize;
   final void Function(EditorImage image)? setAsBackground;
+
+  /// Moves [image] in front of or behind the other images on its page.
+  final void Function(EditorImage image, ImageOrder order)? reorderImage;
   final bool isBackground;
   final bool readOnly;
   final bool selected;
@@ -98,7 +102,7 @@ class _CanvasImageState extends State<CanvasImage> {
     final colorScheme = ColorScheme.of(context);
 
     useListenable(widget.image);
-    if (widget.readOnly) active = false;
+    if (widget.readOnly || widget.image.locked) active = false;
 
     final currentBrightness = widget.image.invertible
         ? Theme.brightnessOf(context)
@@ -117,11 +121,13 @@ class _CanvasImageState extends State<CanvasImage> {
             cursor: active ? SystemMouseCursors.grab : MouseCursor.defer,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () {
-                active = !active;
-              },
-              onLongPress: active ? showModal : null,
-              onSecondaryTap: active ? showModal : null,
+              onTap: widget.image.locked
+                  ? null
+                  : () {
+                      active = !active;
+                    },
+              onLongPress: active || widget.image.locked ? showModal : null,
+              onSecondaryTap: active || widget.image.locked ? showModal : null,
               onPanStart: active
                   ? (details) {
                       panStartRect = widget.image.dstRect;
@@ -189,15 +195,19 @@ class _CanvasImageState extends State<CanvasImage> {
                             widget.image.dstRect.height,
                             CanvasImage.minImageSize,
                           ),
-                    child: SizedOverflowBox(
-                      size: widget.image.srcRect.size,
-                      child: Transform.translate(
-                        offset: -widget.image.srcRect.topLeft,
-                        child: widget.image.buildImageWidget(
-                          context: context,
-                          overrideBoxFit: widget.overrideBoxFit,
-                          isBackground: widget.isBackground,
-                          invert: imageBrightness == .dark,
+                    child: _ImageTransform(
+                      image: widget.image,
+                      enabled: !widget.isBackground,
+                      child: SizedOverflowBox(
+                        size: widget.image.srcRect.size,
+                        child: Transform.translate(
+                          offset: -widget.image.srcRect.topLeft,
+                          child: widget.image.buildImageWidget(
+                            context: context,
+                            overrideBoxFit: widget.overrideBoxFit,
+                            isBackground: widget.isBackground,
+                            invert: imageBrightness == .dark,
+                          ),
                         ),
                       ),
                     ),
@@ -208,6 +218,12 @@ class _CanvasImageState extends State<CanvasImage> {
           ),
           if (widget.selected) // tint image if selected
             ColoredBox(color: colorScheme.primary.withValues(alpha: 0.5)),
+          if (widget.image.locked && !widget.readOnly)
+            const Positioned(
+              top: 4,
+              right: 4,
+              child: IgnorePointer(child: Icon(Icons.lock, size: 16)),
+            ),
           if (!widget.readOnly)
             for (double x = -20; x <= 20; x += 20)
               for (double y = -20; y <= 20; y += 20)
@@ -271,11 +287,65 @@ class _CanvasImageState extends State<CanvasImage> {
             toggleAsBackground: () {
               widget.setAsBackground?.call(widget.image);
             },
+            reorderImage: widget.reorderImage == null
+                ? null
+                : (order) => widget.reorderImage!(widget.image, order),
           ),
           actions: const [],
         );
       },
     );
+  }
+}
+
+/// Applies the crop, flip, rotation and opacity of [image] to [child],
+/// which is laid out as if the image were not rotated.
+class _ImageTransform extends StatelessWidget {
+  const new({required this.image, required this.enabled, required this.child});
+
+  final EditorImage image;
+
+  /// Whether to apply the transformations (false for background images).
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+
+    var result = child;
+
+    final crop = image.crop;
+    if (image.isCropped) {
+      final inner = result;
+      result = LayoutBuilder(
+        builder: (context, constraints) {
+          final fullWidth = constraints.maxWidth / crop.width;
+          final fullHeight = constraints.maxHeight / crop.height;
+          return ClipRect(
+            child: OverflowBox(
+              alignment: .topLeft,
+              minWidth: fullWidth,
+              maxWidth: fullWidth,
+              minHeight: fullHeight,
+              maxHeight: fullHeight,
+              child: Transform.translate(
+                offset: Offset(-crop.left * fullWidth, -crop.top * fullHeight),
+                child: inner,
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    if (image.flipped) result = Transform.flip(flipX: true, child: result);
+    if (image.quarterTurns != 0) {
+      result = RotatedBox(quarterTurns: image.quarterTurns, child: result);
+    }
+    if (image.opacity < 1)
+      result = Opacity(opacity: image.opacity, child: result);
+    return result;
   }
 }
 

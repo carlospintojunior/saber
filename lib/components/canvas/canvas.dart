@@ -23,6 +23,7 @@ class Canvas extends StatelessWidget {
     required this.currentStrokeDetectedShape,
     required this.currentSelection,
     required this.setAsBackground,
+    this.reorderImage,
     required this.currentTool,
     required this.currentScale,
     this.placeholder = false,
@@ -39,6 +40,7 @@ class Canvas extends StatelessWidget {
   final SelectResult? currentSelection;
 
   final void Function(EditorImage image)? setAsBackground;
+  final void Function(EditorImage image, ImageOrder order)? reorderImage;
 
   final Tool currentTool;
   final double currentScale;
@@ -126,6 +128,7 @@ class Canvas extends StatelessWidget {
                       currentStrokeDetectedShape: currentStrokeDetectedShape,
                       currentSelection: currentSelection,
                       setAsBackground: setAsBackground,
+                      reorderImage: reorderImage,
                       currentToolIsSelect: currentTool.toolId == ToolId.select,
                       currentScale: currentScale,
                     ),

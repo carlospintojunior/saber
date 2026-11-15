@@ -213,7 +213,7 @@ class PngEditorImage extends EditorImage {
     srcRect: srcRect,
     naturalSize: naturalSize,
     isThumbnail: isThumbnail,
-  );
+  )..copyLayerStateFrom(this);
 }
 
 /// Resizes the image [rawImage] to [width] and [height].

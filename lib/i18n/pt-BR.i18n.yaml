@@ -320,6 +320,18 @@ editor:
     setAsBackground: Definir como plano de fundo
     removeAsBackground: Remover como plano de fundo
     delete: Excluir
+    rotateLeft: Girar à esquerda
+    rotateRight: Girar à direita
+    flip: Espelhar
+    crop: Recortar
+    cropReset: Redefinir
+    lock: Bloquear
+    unlock: Desbloquear
+    opacity: Opacidade
+    bringToFront: Trazer para frente
+    bringForward: Avançar
+    sendBackward: Recuar
+    sendToBack: Enviar para trás
   selectionBar:
     delete: Excluir
     duplicate(OUTDATED): Duplicação
