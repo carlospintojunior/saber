@@ -22,6 +22,7 @@ import 'package:saber/components/canvas/canvas.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/text/editor_text_box.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
@@ -218,6 +219,10 @@ class EditorState extends State<Editor> {
 
     for (int pageIndex = 0; pageIndex < coreInfo.pages.length; pageIndex++) {
       listenToQuillChanges(coreInfo.pages[pageIndex].quill, pageIndex);
+      for (final textBox in coreInfo.pages[pageIndex].textBoxes) {
+        textBox.pageIndex = pageIndex;
+        _attachTextBox(textBox);
+      }
     }
 
     if (coreInfo.isEmpty) {
@@ -365,6 +370,9 @@ class EditorState extends State<Editor> {
         for (final image in historic.images) {
           coreInfo.pages[image.pageIndex].images.remove(image);
         }
+        for (final textBox in historic.textBoxes) {
+          coreInfo.pages[textBox.pageIndex].textBoxes.remove(textBox);
+        }
         removeExcessPages();
 
       case (final HistoricDelete historic):
@@ -376,6 +384,10 @@ class EditorState extends State<Editor> {
           createPage(image.pageIndex);
           coreInfo.pages[image.pageIndex].images.add(image);
           image.newImage = true;
+        }
+        for (final textBox in historic.textBoxes) {
+          createPage(textBox.pageIndex);
+          coreInfo.pages[textBox.pageIndex].textBoxes.add(textBox);
         }
 
       case (final HistoricPageDelete historic):
@@ -435,12 +447,13 @@ class EditorState extends State<Editor> {
         }
 
       case (final HistoricQuillChange historic):
-        final quill = coreInfo.pages[historic.pageIndex].quill;
-        quill.controller.undo();
+        _quillFor(historic.pageIndex, historic.textBoxId)?.controller.undo();
 
       case (final HistoricQuillReverseChange historic):
-        final quill = coreInfo.pages[historic.pageIndex].quill;
-        quill.controller.redo();
+        _quillFor(historic.pageIndex, historic.textBoxId)?.controller.redo();
+
+      case (final HistoricTextBoxMove historic):
+        historic.box.rect = historic.from;
 
       case (final HistoricColorChange historic):
         for (final entry in historic.colorChanges.entries) {
@@ -906,14 +919,131 @@ class EditorState extends State<Editor> {
 
   void _onQuillFocusChange() {
     for (final page in coreInfo.pages) {
-      if (!page.quill.focusNode.hasFocus) continue;
-      quillFocus.value = page.quill;
+      if (page.quill.focusNode.hasFocus) quillFocus.value = page.quill;
+      for (final textBox in page.textBoxes) {
+        if (textBox.quill.focusNode.hasFocus) quillFocus.value = textBox.quill;
+      }
     }
+  }
+
+  /// The Quill of the text box with [textBoxId] on the page at [pageIndex],
+  /// or the page's main Quill if [textBoxId] is null.
+  /// Returns null if that text box doesn't exist anymore.
+  QuillStruct? _quillFor(int pageIndex, int? textBoxId) {
+    final page = coreInfo.pages[pageIndex];
+    if (textBoxId == null) return page.quill;
+    for (final textBox in page.textBoxes) {
+      if (textBox.id == textBoxId) return textBox.quill;
+    }
+    return null;
+  }
+
+  /// Connects a text box to the editor's history and autosave.
+  void _attachTextBox(EditorTextBox textBox) {
+    textBox.onMove = onMoveTextBox;
+    textBox.onDelete = onDeleteTextBox;
+    textBox.onMiscChange = autosaveAfterDelay;
+
+    textBox.quill.changeSubscription?.cancel();
+    textBox.quill.changeSubscription = textBox.quill.controller.changes.listen((
+      event,
+    ) {
+      final undoRedoButtonsNeedUpdating = !history.canUndo || history.canRedo;
+      _addQuillChangeToHistory(
+        quill: textBox.quill,
+        pageIndex: textBox.pageIndex,
+        textBoxId: textBox.id,
+        event: event,
+      );
+      if (undoRedoButtonsNeedUpdating) setState(() {});
+      autosaveAfterDelay();
+    });
+    textBox.quill.focusNode.addListener(_onQuillFocusChange);
+  }
+
+  int _newTextBoxId() {
+    var maxId = 0;
+    for (final page in coreInfo.pages) {
+      for (final textBox in page.textBoxes) {
+        maxId = max(maxId, textBox.id);
+      }
+    }
+    return maxId + 1;
+  }
+
+  /// Adds an empty text box to the current page and starts editing it.
+  void addTextBox() {
+    if (coreInfo.readOnly) return;
+    final pageIndex = currentPageIndex;
+    final page = coreInfo.pages[pageIndex];
+
+    // cascade new boxes so they don't hide each other
+    final offset = (page.textBoxes.length % 6) * 30.0;
+    final width = min(page.size.width * 0.5, 400.0);
+    final textBox = EditorTextBox.empty(
+      id: _newTextBoxId(),
+      pageIndex: pageIndex,
+      rect: Rect.fromLTWH(
+        page.size.width * 0.1 + offset,
+        120 + offset,
+        width,
+        160,
+      ),
+    );
+    _attachTextBox(textBox);
+
+    setState(() {
+      page.textBoxes.add(textBox);
+      history.recordChange(
+        HistoricAdd(strokes: const [], images: const [], textBoxes: [textBox]),
+      );
+      currentTool = Tool.textEditing;
+      quillFocus.value = textBox.quill;
+    });
+    createPage(pageIndex); // keep an empty last page
+    autosaveAfterDelay();
+  }
+
+  void onMoveTextBox(EditorTextBox textBox, Rect from, Rect to) {
+    history.recordChange(HistoricTextBoxMove(box: textBox, from: from, to: to));
+    setState(() {});
+    autosaveAfterDelay();
+  }
+
+  void onDeleteTextBox(EditorTextBox textBox) {
+    history.recordChange(
+      HistoricDelete(strokes: const [], images: const [], textBoxes: [textBox]),
+    );
+    setState(() {
+      coreInfo.pages[textBox.pageIndex].textBoxes.remove(textBox);
+    });
+    autosaveAfterDelay();
+  }
+
+  /// Moves [textBox] in front of or behind the other text boxes on its page.
+  /// Boxes are painted in list order, so this also changes the saved order.
+  void reorderTextBox(EditorTextBox textBox, ImageOrder order) {
+    final boxes = coreInfo.pages[textBox.pageIndex].textBoxes;
+    final index = boxes.indexOf(textBox);
+    if (index < 0) return;
+    final newIndex = switch (order) {
+      .toFront => boxes.length - 1,
+      .forward => min(index + 1, boxes.length - 1),
+      .backward => max(index - 1, 0),
+      .toBack => 0,
+    };
+    if (newIndex == index) return;
+    setState(() {
+      boxes.removeAt(index);
+      boxes.insert(newIndex, textBox);
+    });
+    autosaveAfterDelay();
   }
 
   void _addQuillChangeToHistory({
     required QuillStruct quill,
     required int pageIndex,
+    int? textBoxId,
     required flutter_quill.DocChange event,
   }) {
     final eventWasUndo = quill.controller.hasRedo;
@@ -925,6 +1055,7 @@ class EditorState extends State<Editor> {
       final lastChange = history.peekUndo();
       if (lastChange is HistoricQuillChange &&
           lastChange.pageIndex == pageIndex &&
+          lastChange.textBoxId == textBoxId &&
           lastChange.quillChange.before == event.before) {
         // Remove the last change, to be replaced.
         // This only pops it from the list; [this.undo] is not called.
@@ -933,7 +1064,11 @@ class EditorState extends State<Editor> {
     }
 
     history.recordChange(
-      HistoricQuillChange(pageIndex: pageIndex, quillChange: event),
+      HistoricQuillChange(
+        pageIndex: pageIndex,
+        quillChange: event,
+        textBoxId: textBoxId,
+      ),
     );
   }
 
@@ -1647,6 +1782,7 @@ class EditorState extends State<Editor> {
           },
           quillFocus: quillFocus,
           textEditing: currentTool == Tool.textEditing,
+          addTextBox: addTextBox,
           toggleTextEditing: () => setState(() {
             if (currentTool == Tool.textEditing) {
               currentTool = Pen.currentPen;
@@ -1656,6 +1792,12 @@ class EditorState extends State<Editor> {
                   page.quill.controller.selection.extentOffset,
                 );
                 page.quill.focusNode.unfocus();
+                for (final textBox in page.textBoxes) {
+                  textBox.quill.controller.moveCursorToPosition(
+                    textBox.quill.controller.selection.extentOffset,
+                  );
+                  textBox.quill.focusNode.unfocus();
+                }
               }
             } else {
               currentTool = Tool.textEditing;
@@ -1960,6 +2102,7 @@ class EditorState extends State<Editor> {
         setState(() {});
       },
       reorderImage: reorderImage,
+      reorderTextBox: reorderTextBox,
       currentTool: currentTool,
       currentScale: _transformationController.value.approxScale,
     );
@@ -1993,10 +2136,14 @@ class EditorState extends State<Editor> {
             ),
             focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
           ),
+          textBoxes: page.textBoxes
+              .map((textBox) => textBox.copy()..pageIndex += 1)
+              .toList(),
           backgroundImage: page.backgroundImage?.copy()?..pageIndex += 1,
         );
         coreInfo.pages.insert(pageIndex + 1, newPage);
         listenToQuillChanges(newPage.quill, pageIndex + 1);
+        newPage.textBoxes.forEach(_attachTextBox);
         history.recordChange(
           HistoricPageInsert(pageIndex: pageIndex + 1, page: newPage),
         );
@@ -2033,11 +2180,17 @@ class EditorState extends State<Editor> {
     setState(() {
       final removedStrokes = page.strokes.toList();
       final removedImages = page.images.toList();
+      final removedTextBoxes = page.textBoxes.toList();
       page.strokes.clear();
       page.images.clear();
+      page.textBoxes.clear();
       removeExcessPages();
       history.recordChange(
-        HistoricDelete(strokes: removedStrokes, images: removedImages),
+        HistoricDelete(
+          strokes: removedStrokes,
+          images: removedImages,
+          textBoxes: removedTextBoxes,
+        ),
       );
       autosaveAfterDelay();
     });
@@ -2048,15 +2201,22 @@ class EditorState extends State<Editor> {
     setState(() {
       final removedStrokes = <Stroke>[];
       final removedImages = <EditorImage>[];
+      final removedTextBoxes = <EditorTextBox>[];
       for (final page in coreInfo.pages) {
         removedStrokes.addAll(page.strokes);
         removedImages.addAll(page.images);
+        removedTextBoxes.addAll(page.textBoxes);
         page.strokes.clear();
         page.images.clear();
+        page.textBoxes.clear();
       }
       removeExcessPages();
       history.recordChange(
-        HistoricDelete(strokes: removedStrokes, images: removedImages),
+        HistoricDelete(
+          strokes: removedStrokes,
+          images: removedImages,
+          textBoxes: removedTextBoxes,
+        ),
       );
     });
     autosaveAfterDelay();

@@ -4,6 +4,7 @@ import 'package:onyxsdk_pen/onyxsdk_pen.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
+import 'package:saber/components/canvas/text/editor_text_box.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -24,6 +25,7 @@ class Canvas extends StatelessWidget {
     required this.currentSelection,
     required this.setAsBackground,
     this.reorderImage,
+    this.reorderTextBox,
     required this.currentTool,
     required this.currentScale,
     this.placeholder = false,
@@ -41,6 +43,7 @@ class Canvas extends StatelessWidget {
 
   final void Function(EditorImage image)? setAsBackground;
   final void Function(EditorImage image, ImageOrder order)? reorderImage;
+  final void Function(EditorTextBox box, ImageOrder order)? reorderTextBox;
 
   final Tool currentTool;
   final double currentScale;
@@ -129,6 +132,7 @@ class Canvas extends StatelessWidget {
                       currentSelection: currentSelection,
                       setAsBackground: setAsBackground,
                       reorderImage: reorderImage,
+                      reorderTextBox: reorderTextBox,
                       currentToolIsSelect: currentTool.toolId == ToolId.select,
                       currentScale: currentScale,
                     ),

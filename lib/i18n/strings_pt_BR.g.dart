@@ -222,6 +222,7 @@ class _Translations$editor$pt_BR extends Translations$editor$pt {
 	@override late final _Translations$editor$penOptions$pt_BR penOptions = _Translations$editor$penOptions$pt_BR._(_root);
 	@override late final _Translations$editor$colors$pt_BR colors = _Translations$editor$colors$pt_BR._(_root);
 	@override late final _Translations$editor$imageOptions$pt_BR imageOptions = _Translations$editor$imageOptions$pt_BR._(_root);
+	@override late final _Translations$editor$textBoxOptions$pt_BR textBoxOptions = _Translations$editor$textBoxOptions$pt_BR._(_root);
 	@override late final _Translations$editor$selectionBar$pt_BR selectionBar = _Translations$editor$selectionBar$pt_BR._(_root);
 	@override late final _Translations$editor$menu$pt_BR menu = _Translations$editor$menu$pt_BR._(_root);
 	@override late final _Translations$editor$photoPdfError$pt_BR photoPdfError = _Translations$editor$photoPdfError$pt_BR._(_root);
@@ -675,6 +676,7 @@ class _Translations$editor$toolbar$pt_BR extends Translations$editor$toolbar$pt 
 	@override String get toggleEraser => 'Borracha (Ctrl E)';
 	@override String get photo => 'Imagens';
 	@override String get text => 'Texto';
+	@override String get addTextBox => 'Adicionar caixa de texto';
 	@override String get toggleFingerDrawing => 'Desenhar com o dedo (Ctrl F)';
 	@override String get undo => 'Desfazer';
 	@override String get redo => 'Refazer';
@@ -768,6 +770,26 @@ class _Translations$editor$imageOptions$pt_BR extends Translations$editor$imageO
 	@override String get bringForward => 'Avançar';
 	@override String get sendBackward => 'Recuar';
 	@override String get sendToBack => 'Enviar para trás';
+}
+
+// Path: editor.textBoxOptions
+class _Translations$editor$textBoxOptions$pt_BR extends Translations$editor$textBoxOptions$en {
+	_Translations$editor$textBoxOptions$pt_BR._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+	final TranslationsPtBr _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Opções da caixa de texto';
+	@override String get link => 'Link (abre ao tocar na caixa)';
+	@override String get removeLink => 'Remover link';
+	@override String get lock => 'Bloquear';
+	@override String get unlock => 'Desbloquear';
+	@override String get opacity => 'Opacidade';
+	@override String get bringToFront => 'Trazer para frente';
+	@override String get bringForward => 'Avançar';
+	@override String get sendBackward => 'Recuar';
+	@override String get sendToBack => 'Enviar para trás';
+	@override String get delete => 'Excluir';
 }
 
 // Path: editor.selectionBar

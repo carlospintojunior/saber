@@ -274,6 +274,7 @@ editor:
     toggleEraser: Toggle eraser (Ctrl E)
     photo: Images
     text: Text
+    addTextBox: Add text box
     toggleFingerDrawing: Toggle finger drawing (Ctrl F)
     undo: Undo
     redo: Redo
@@ -335,6 +336,18 @@ editor:
     bringForward: Forward
     sendBackward: Backward
     sendToBack: Send to back
+  textBoxOptions:
+    title: Text box options
+    link: Link (opens when the box is tapped)
+    removeLink: Remove link
+    lock: Lock
+    unlock: Unlock
+    opacity: Opacity
+    bringToFront: Bring to front
+    bringForward: Forward
+    sendBackward: Backward
+    sendToBack: Send to back
+    delete: Delete
   selectionBar:
     delete: Delete
     duplicate: Duplicate

@@ -309,6 +309,7 @@ class Translations$editor$en {
 	late final Translations$editor$penOptions$en penOptions = Translations$editor$penOptions$en.internal(_root);
 	late final Translations$editor$colors$en colors = Translations$editor$colors$en.internal(_root);
 	late final Translations$editor$imageOptions$en imageOptions = Translations$editor$imageOptions$en.internal(_root);
+	late final Translations$editor$textBoxOptions$en textBoxOptions = Translations$editor$textBoxOptions$en.internal(_root);
 	late final Translations$editor$selectionBar$en selectionBar = Translations$editor$selectionBar$en.internal(_root);
 	late final Translations$editor$menu$en menu = Translations$editor$menu$en.internal(_root);
 	late final Translations$editor$photoPdfError$en photoPdfError = Translations$editor$photoPdfError$en.internal(_root);
@@ -1071,6 +1072,9 @@ class Translations$editor$toolbar$en {
 	/// en: 'Text'
 	String get text => 'Text';
 
+	/// en: 'Add text box'
+	String get addTextBox => 'Add text box';
+
 	/// en: 'Toggle finger drawing (Ctrl F)'
 	String get toggleFingerDrawing => 'Toggle finger drawing (Ctrl F)';
 
@@ -1277,6 +1281,48 @@ class Translations$editor$imageOptions$en {
 
 	/// en: 'Send to back'
 	String get sendToBack => 'Send to back';
+}
+
+// Path: editor.textBoxOptions
+class Translations$editor$textBoxOptions$en {
+	Translations$editor$textBoxOptions$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Text box options'
+	String get title => 'Text box options';
+
+	/// en: 'Link (opens when the box is tapped)'
+	String get link => 'Link (opens when the box is tapped)';
+
+	/// en: 'Remove link'
+	String get removeLink => 'Remove link';
+
+	/// en: 'Lock'
+	String get lock => 'Lock';
+
+	/// en: 'Unlock'
+	String get unlock => 'Unlock';
+
+	/// en: 'Opacity'
+	String get opacity => 'Opacity';
+
+	/// en: 'Bring to front'
+	String get bringToFront => 'Bring to front';
+
+	/// en: 'Forward'
+	String get bringForward => 'Forward';
+
+	/// en: 'Backward'
+	String get sendBackward => 'Backward';
+
+	/// en: 'Send to back'
+	String get sendToBack => 'Send to back';
+
+	/// en: 'Delete'
+	String get delete => 'Delete';
 }
 
 // Path: editor.selectionBar

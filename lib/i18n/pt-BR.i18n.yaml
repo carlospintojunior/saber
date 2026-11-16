@@ -271,6 +271,7 @@ editor:
     toggleEraser: Borracha (Ctrl E)
     photo: Imagens
     text: Texto
+    addTextBox: Adicionar caixa de texto
     toggleFingerDrawing: Desenhar com o dedo (Ctrl F)
     undo: Desfazer
     redo: Refazer
@@ -332,6 +333,18 @@ editor:
     bringForward: Avançar
     sendBackward: Recuar
     sendToBack: Enviar para trás
+  textBoxOptions:
+    title: Opções da caixa de texto
+    link: Link (abre ao tocar na caixa)
+    removeLink: Remover link
+    lock: Bloquear
+    unlock: Desbloquear
+    opacity: Opacidade
+    bringToFront: Trazer para frente
+    bringForward: Avançar
+    sendBackward: Recuar
+    sendToBack: Enviar para trás
+    delete: Excluir
   selectionBar:
     delete: Excluir
     duplicate(OUTDATED): Duplicação

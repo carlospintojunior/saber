@@ -39,6 +39,7 @@ class Toolbar extends StatefulWidget {
     required this.quillFocus,
     required this.textEditing,
     required this.toggleTextEditing,
+    this.addTextBox,
     required this.undo,
     required this.isUndoPossible,
     required this.redo,
@@ -62,6 +63,9 @@ class Toolbar extends StatefulWidget {
   final ValueNotifier<QuillStruct?> quillFocus;
   final bool textEditing;
   final VoidCallback toggleTextEditing;
+
+  /// Adds a movable text box to the current page.
+  final VoidCallback? addTextBox;
 
   final VoidCallback undo;
   final bool isUndoPossible;
@@ -468,6 +472,13 @@ class _ToolbarState extends State<Toolbar> {
                   icon: Icons.text_fields,
                   cupertinoIcon: CupertinoIcons.text_cursor,
                 ),
+              ),
+              ToolbarIconButton(
+                tooltip: t.editor.toolbar.addTextBox,
+                enabled: !widget.readOnly && widget.addTextBox != null,
+                onPressed: widget.addTextBox,
+                padding: buttonPadding,
+                child: const Icon(Icons.add_box_outlined),
               ),
               if (!stows.hideFingerDrawingToggle.value)
                 ValueListenableBuilder(

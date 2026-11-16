@@ -2,6 +2,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/text/editor_text_box.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/change.dart';
@@ -151,22 +152,26 @@ sealed class Historic {
   Historic reverse();
 }
 
-/// A stroke or image was drawn/added.
+/// A stroke, image or text box was drawn/added.
 class const HistoricAdd({
   required final List<Stroke> strokes,
   required final List<EditorImage> images,
+  final List<EditorTextBox> textBoxes = const [],
 }) extends Historic {
   @override
-  HistoricDelete reverse() => .new(strokes: strokes, images: images);
+  HistoricDelete reverse() =>
+      .new(strokes: strokes, images: images, textBoxes: textBoxes);
 }
 
-/// A stroke or image was erased/deleted.
+/// A stroke, image or text box was erased/deleted.
 class const HistoricDelete({
   required final List<Stroke> strokes,
   required final List<EditorImage> images,
+  final List<EditorTextBox> textBoxes = const [],
 }) extends Historic {
   @override
-  HistoricAdd reverse() => .new(strokes: strokes, images: images);
+  HistoricAdd reverse() =>
+      .new(strokes: strokes, images: images, textBoxes: textBoxes);
 }
 
 /// A stroke or image was moved.
@@ -209,13 +214,20 @@ class const HistoricPageDelete({
 }
 
 /// A change in the Quill text editor.
+///
+/// If [textBoxId] is not null, the change was in that text box
+/// of the page instead of the page's main text.
 class const HistoricQuillChange({
   required final int pageIndex,
   required final DocChange quillChange,
+  final int? textBoxId,
 }) extends Historic {
   @override
-  HistoricQuillReverseChange reverse() =>
-      .new(pageIndex: pageIndex, quillChange: quillChange);
+  HistoricQuillReverseChange reverse() => .new(
+    pageIndex: pageIndex,
+    quillChange: quillChange,
+    textBoxId: textBoxId,
+  );
 }
 
 /// A reversed change in the Quill text editor.
@@ -225,10 +237,24 @@ class const HistoricQuillChange({
 class const HistoricQuillReverseChange({
   required final int pageIndex,
   required final DocChange quillChange,
+  final int? textBoxId,
 }) extends Historic {
   @override
-  HistoricQuillChange reverse() =>
-      .new(pageIndex: pageIndex, quillChange: quillChange);
+  HistoricQuillChange reverse() => .new(
+    pageIndex: pageIndex,
+    quillChange: quillChange,
+    textBoxId: textBoxId,
+  );
+}
+
+/// A text box was moved or resized from [from] to [to].
+class const HistoricTextBoxMove({
+  required final EditorTextBox box,
+  required final Rect from,
+  required final Rect to,
+}) extends Historic {
+  @override
+  HistoricTextBoxMove reverse() => .new(box: box, from: to, to: from);
 }
 
 /// Some strokes' colors were changed.

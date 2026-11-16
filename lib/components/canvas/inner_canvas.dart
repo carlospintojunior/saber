@@ -6,7 +6,9 @@ import 'package:saber/components/canvas/_canvas_background_painter.dart';
 import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
+import 'package:saber/components/canvas/canvas_text_box.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/text/editor_text_box.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
@@ -30,6 +32,7 @@ class InnerCanvas extends StatefulWidget {
     required this.currentSelection,
     this.setAsBackground,
     this.reorderImage,
+    this.reorderTextBox,
     this.onRenderObjectChange,
     required this.currentToolIsSelect,
     required this.currentScale,
@@ -47,6 +50,7 @@ class InnerCanvas extends StatefulWidget {
   final SelectResult? currentSelection;
   final void Function(EditorImage image)? setAsBackground;
   final void Function(EditorImage image, ImageOrder order)? reorderImage;
+  final void Function(EditorTextBox box, ImageOrder order)? reorderTextBox;
   final ValueChanged<RenderObject>? onRenderObjectChange;
 
   final bool currentToolIsSelect;
@@ -193,6 +197,26 @@ class _InnerCanvasState extends State<InnerCanvas> {
                           page.images[i],
                         ) ??
                         false,
+                  ),
+                for (final textBox in page.textBoxes)
+                  CanvasTextBox(
+                    filePath: widget.coreInfo.filePath,
+                    box: textBox,
+                    mode: widget.coreInfo.readOnly
+                        ? TextBoxMode.view
+                        : widget.textEditing
+                        ? TextBoxMode.edit
+                        : widget.currentToolIsSelect
+                        ? TextBoxMode.select
+                        : TextBoxMode.inert,
+                    pageSize: Size(widget.width, widget.height),
+                    customStyles: SaberQuillStyles.get(
+                      invert: invert,
+                      secondary: colorScheme.secondary,
+                      lineHeight: widget.coreInfo.lineHeight,
+                    ),
+                    invert: invert,
+                    reorderTextBox: widget.reorderTextBox,
                   ),
               ],
             ),
