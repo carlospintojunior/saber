@@ -27,7 +27,11 @@ class FileManager {
 
   static final log = Logger('FileManager');
 
-  static const appRootDirectoryPrefix = 'Saber';
+  /// The name of the notes folder, both on the device and on Nextcloud.
+  ///
+  /// This fork uses its own folder so that it never overwrites notes
+  /// written by the original Saber app on the same account.
+  static const appRootDirectoryPrefix = 'SaberFork';
 
   /// This isn't final because isolates sometimes init multiple times.
   /// Realistically, this value never changes.
